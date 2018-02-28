@@ -1,0 +1,26 @@
+suites:
+  cobertura:
+    report: coverage.xml
+    constraints:
+      -
+        type: global
+        line: 80
+        branch: 80
+        complexity: 0
+      # -
+      #   type: ignore
+      #   paths:
+      #     - vigilance/suite.py
+      # -
+      #   type: file
+      #   path: vigilance/constraint.py
+      #   branch: 50
+      # -
+      #   type: package
+      #   name: vigilance
+      #   branch: 70
+  doxygen:
+    report: doxygen.err
+    constraints:
+      -
+        type: documentation

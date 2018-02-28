@@ -1,0 +1,10 @@
+[run]
+branch = True
+omit =
+    # omit anything in a .local directory anywhere
+    # omit everything in /usr
+    # omit this single file
+    tests/*
+
+include =
+    pycamunda/*
