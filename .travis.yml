@@ -12,6 +12,7 @@ install:
 script:
 - "./build.sh"
 deploy:
+  matrix:
   - provider: pages
     skip_cleanup: true
     local_dir: "$TRAVIS_BUILD_DIR/docs/doxygen/html"
@@ -19,9 +20,9 @@ deploy:
     on:
       branch: master
   - provider: pypi
-    user: "belvedere-trading"
+    user: belvedere-trading
     password:
-      secure: xOetc0iG94zee4M3eOe0TaWBRiRByX2U5iFClEFPktOdtvDzeGbGcF6hgghsuXXVTmcD1AJC350tDluYrufz+HgYsKkUmZ1QJiwONg8SUbY6ZdkPDT+TEvnLHFaQvsQ33Uq5T2ipY4fMadOidvjsPRuOlP4LExTAVdDmgrB77pObTR0Rk7rvtlx3mhVAQR+Q3jcKgK8KKh+glCmDutmBVTM2gFz/qAAC92v21I37zRMniQ4dk7DGmmua/83/OqiTzBS114wuJAbUSrjxFTE+jF+cnr9KyPXNovi5ctVa5K3PVF58wFAvq41ZCE9mhTzEIUT/giwiwFn8vWSO/eAjolKYmef01f3cpCpUpJNOoKc2I5I6ogEqdc8opf8hVc0NodDa1bov9JuqscGekBCgy32K6LutEu6m4Ms+ZrhpDOgBnVCs17zqWZYjAcFd467R5Uo2Uhtn/QDBKZ/+tsGVdI8EM4fZhjisftIGNxYxnFaKS/K163ONExyGHVp3oyu+8XYQ5iyuqNndr8KLsS5XJeKARDJduNn4HbCeiD8WkjcotrEgWk2FI0XH+erPP2HUCnC7FDXf0vfg7R04dmzoAXNaHnYgsBejakehblgOjoH9rFqLiU4bPwexxV5+17tn0c+WVPi9Fa/fOyMcaAA/WS7VbLTUV+P8YfAjNazrVuE=
-    distributions: "sdist bdist_wheel"
+      secure: tcabWIfQ/4j14EAENZQND6LSGJKsjMasfzKaMXeuObvHw/vOsj9MIsXRTwt/Qz15IqFonMToqBlgL04lCEJl9vBDA0tTcfBbUvmcMZhTrrNTQGkuv06/ss8L3TCEMbKrxqcrbcZz6nWnJQdY21JXk/KsmKQ47UyprSxP3GtPf11tAIalDXTPa4k3wQrdPei6ZLHrjYroGGuY40mop5V8wX61ydrhqIN6wPfTIZAeH9aWA7+bfDABHbpJGjeW1TWpJ3T3LJIoUPfjDoC/AvNW9fAR1NL0Pdv0H4jFMQEI8rltWA9To/bfUozCYFaIsUGadMyE9ShTwFJtLkjikihA+NkjrlGdYO4bbiQJyPwFSm9V6i9+qrmh+eR7Znxcqcfbgj05HKhUims8SML4edYNbpHWQxYF0P+44SR2LJOMiKxR8JDrgSIOb8qBlY5Y0baCuDrI9jcM7NtMYpysQgz7KdBBbnsoAQEga71BOmbiv8N/PYCtML3Dfb14TWpGahBrk31x6712V8CCLKa3m6jsEP/hN8mxZK3fZYlDiOJhIvVJ/LexIM2b5YlBhLtkJbITJs1wRH179yfVtnqQ/uSi18K+YVywQIAHoxQ46GME2vW1NYUg0aA3How++/jakFbFuSOQ5toqm2pSbtkl5XQZiv54lmJ8GnZOkL1/Vs2LMZg=
+    distributions: sdist bdist_wheel
     on:
       tags: true
