@@ -12,7 +12,6 @@ install:
 script:
 - "./build.sh"
 deploy:
-  matrix:
   - provider: pages
     skip_cleanup: true
     local_dir: "$TRAVIS_BUILD_DIR/docs/doxygen/html"
