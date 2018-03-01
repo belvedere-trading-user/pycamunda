@@ -6,6 +6,7 @@ import logging
 from abc import ABCMeta, abstractproperty
 from collections import namedtuple
 
+from enum import Enum
 import requests
 
 from .system import System
@@ -160,6 +161,8 @@ class Endpoint(object):
         client somehow.
         """
         self.engine_name = engine_name
+        self.parameters = None
+
     @abstractproperty
     def method(self):
         """Returns the HTTP method to use for communication with the endpoint.
@@ -205,12 +208,53 @@ class Endpoint(object):
         return 10.0
 
     @property
+    def parameters_type(self): #pylint: disable=no-self-use
+        """Returns the required type of the query parameters object required for communication with the endpoint.
+
+        @returns A JsonInputEntity subclass, or None.
+        """
+        return None
+
+    def with_parameters(self, **kwargs):
+        """Adds parameters to the endpoint request.
+
+        This will construct an instance of Endpoint.parameters_type and associate it with the endpoint instance.
+
+        @returns An Entity instance.
+        @throws ValueError if Endpoint.parameters_type returns None.
+        @throws voluptuous.Invalid if @p kwargs are not valid in the context of Endpoint.parameters_type.
+        """
+        if self.parameters_type is None:
+            raise ValueError('Cannot add parameters when parameters_type is None')
+        self.parameters = self.parameters_type(**kwargs) #pylint: disable=not-callable
+        return self
+
+    @property
+    def parameters_required(self): #pylint: disable=no-self-use
+        """Whether or not parameters are required for the endpoint to be successfully used.
+
+        @returns A boolean
+        """
+        return False
+
+    @property
     def params(self): #pylint: disable=no-self-use
         """Returns query string parameters to use for communication with the endpoint.
 
         @returns A dictionary, or None.
         """
-        return None
+        if self.parameters is None:
+            if self.parameters_required:
+                raise ValueError('Parameters required but not suppled for endpoint')
+            return None
+
+        params = {}
+        for key, value in self.parameters.iteritems():
+            if isinstance(value, Enum):
+                params[key] = value.value
+            else:
+                params[key] = value
+        return params
 
     @property
     def return_type(self): #pylint: disable=no-self-use
@@ -220,12 +264,26 @@ class Endpoint(object):
         """
         return None
 
+class DeleteEndpoint(Endpoint): #pylint: disable=abstract-method
+    """An abstract Endpoint implementation for operations that use the HTTP DELETE method.
+    """
+    @property
+    def method(self):
+        return HttpMethod.Delete
+
 class GetEndpoint(Endpoint): #pylint: disable=abstract-method
     """An abstract Endpoint implementation for operations that use the HTTP GET method.
     """
     @property
     def method(self):
         return HttpMethod.Get
+
+class OptionsEndpoint(Endpoint): #pylint: disable=abstract-method
+    """An abstract Endpoint implementation for operations that use the HTTP OPTIONS method.
+    """
+    @property
+    def method(self):
+        return HttpMethod.Options
 
 class PostEndpoint(Endpoint): #pylint: disable=abstract-method
     """An abstract Endpoint implementation for operations that use the HTTP POST method.
@@ -240,6 +298,24 @@ class PutEndpoint(Endpoint): #pylint: disable=abstract-method
     @property
     def method(self):
         return HttpMethod.Put
+
+class CamundaException(Exception):
+    """The base class for all exceptions explicitly raised by pycamunda.
+    """
+    def __init__(self, response):
+        response_dict = response.json()
+        super(CamundaException, self).__init__(response_dict['message'])
+        self.api_type = response_dict['type']
+
+class BadRequest(CamundaException):
+    """Raised if an API request is somehow malformed.
+    """
+    pass
+
+class ResourceNotFound(CamundaException):
+    """Raised if an API operation is attempted with a resource id that could not be found by the Camunda server.
+    """
+    pass
 
 class Camunda(object):
     """Handles connectivity to the Camunda REST api.
@@ -272,7 +348,10 @@ class Camunda(object):
                                     headers=endpoint.headers, timeout=endpoint.timeout, params=endpoint.params,
                                     data=payload)
         # TODO: Deal with standard api exceptions
-        response.raise_for_status()
+        if response.status_code == 400:
+            raise BadRequest(response)
+        if response.status_code == 404:
+            raise ResourceNotFound(response)
 
         if endpoint.return_type is None:
             return None

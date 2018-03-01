@@ -12,13 +12,14 @@ import voluptuous
 
 log = logging.getLogger(__name__)
 
-##
-# A schema validator for arbitrary numeric types.
+## A schema validator for arbitrary numeric types.
 Number = voluptuous.Any(int, long, float) #pylint: disable=invalid-name
 
-##
-# A schema validator for arbitrary textual types.
+## A schema validator for arbitrary textual types.
 Text = voluptuous.Any(str, unicode) #pylint: disable=invalid-name
+
+## A schema validator for Camunda identifiers.
+Identifier = voluptuous.Any(Text, None) #pylint: disable=invalid-name
 
 class MalformedEntity(Exception):
     """Raised if a raw api response cannot be parsed into an intermediate format (json/yaml/etc).
@@ -78,11 +79,11 @@ class Entity(Mapping):
                 raw = self.decoder(raw) #pylint: disable=not-callable,too-many-function-args
             self.decoded = self.schema(raw) #pylint: disable=not-callable,too-many-function-args
         except voluptuous.Error:
-            log.exception('Api response failed Entity schema validation', extra={'Raw': self.raw, 'Decoder': self.decoder.__name__})
+            log.exception('Api response failed Entity schema validation: %s', self.raw)
             exc_info = sys.exc_info()
             raise InvalidEntity, exc_info[1], exc_info[2]
         except Exception:
-            log.exception('Failed to parse api response', extra={'Raw': self.raw, 'Decoder': self.decoder.__name__})
+            log.exception('Failed to parse api response using decoder %s: %s', self.decoder.__name__, self.raw)
             exc_info = sys.exc_info()
             raise MalformedEntity, exc_info[1], exc_info[2]
         if isinstance(self.schema.schema, dict):
@@ -153,3 +154,9 @@ class JsonEntity(Entity): #pylint: disable=abstract-method
         @returns A string.
         """
         return json.dumps(self.decoded)
+
+class JsonInputEntity(JsonEntity): #pylint: disable=abstract-method
+    """An abstract Entity implementation for entities that can be sent to the Camunda REST api.
+    """
+    def __init__(self, **kwargs):
+        super(JsonInputEntity, self).__init__(kwargs)
