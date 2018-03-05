@@ -1,6 +1,6 @@
 """@ingroup endpoints
 @file
-Definitions of Camunda REST endpoints.
+Definitions of Camunda Authorization REST endpoints.
 """
 from enum import IntEnum
 from voluptuous import Any, Coerce, Schema, Optional

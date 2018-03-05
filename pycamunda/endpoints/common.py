@@ -3,9 +3,20 @@
 Common schema definitions shared across multiple endpoint types.
 """
 from enum import Enum, IntEnum
+
+from dateutil.parser import parse
 from voluptuous import Schema
 
 from pycamunda.entity import JsonEntity, Number
+
+## A schema validator for Camunda timestamp objects.
+Timestamp = parse # pylint: disable=invalid-name
+
+class ContentType(Enum):
+    """Models HTTP content types.
+    """
+    OctetStream = 'application/octet-stream'
+    Plain = 'text/plain'
 
 class SortOrder(Enum):
     """Models sorting orders for REST queries.

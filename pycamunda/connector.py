@@ -333,7 +333,7 @@ class Camunda(object):
         """Sends an HTTP request to the specified endpoint.
 
         @param endpoint An Endpoint subclass instance.
-        @param payload Data to be sent along with the request.
+        @param payload A pycamunda.entity.RequestsInput implementation containing to be sent along with the request.
         @param cache Whether the response should be cached.
         If not set to True, the internal cache will never be used.
         If set to True, the first request for an endpoint will contact the remote while subsequent requests return the cached response.
@@ -342,11 +342,13 @@ class Camunda(object):
         """
         if cache and endpoint in self.cache:
             return self.cache[endpoint]
+        request_kwargs = {'auth': self.auth, 'headers': endpoint.headers, 'timeout': endpoint.timeout,
+                          'params': endpoint.params}
+        if payload is not None:
+            request_kwargs.update(payload.to_requests())
         url = self.base_url + endpoint.uri
         log.debug('Sending request to Camunda endpoint %s', url)
-        response = requests.request(endpoint.method, url, auth=self.auth,
-                                    headers=endpoint.headers, timeout=endpoint.timeout, params=endpoint.params,
-                                    data=payload)
+        response = requests.request(endpoint.method, url, **request_kwargs)
         # TODO: Deal with standard api exceptions
         if response.status_code == 400:
             raise BadRequest(response)

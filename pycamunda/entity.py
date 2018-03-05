@@ -5,7 +5,7 @@ Definitions of the entity representations for data used as input to/output from 
 import json
 import logging
 import sys
-from abc import abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 from collections import Mapping
 
 import voluptuous
@@ -119,7 +119,7 @@ class Entity(Mapping):
         @param cls
         @param kwargs Keyword arguments to construct the entity.
         @returns An Entity instance.
-        @throws InvalidEntity if @p kwargs does not properly specify an instance of the Entity subclass.
+        @throws InvalidEntity if @p kwargs does not properGetDeploymentResourcesly specify an instance of the Entity subclass.
         """
         return cls(kwargs) #pylint: disable=no-value-for-parameter
 
@@ -148,15 +148,58 @@ class JsonEntity(Entity): #pylint: disable=abstract-method
     def decoder(self):
         return json.loads
 
-    def to_payload(self):
-        """Converts the JsonEntity to a payload that can be sent over the wire.
+class RequestsInput(object):
+    """An interface for data types that can be used as payloads in remote HTTP requests.
+    """
+    __metaclass__ = ABCMeta
+    @abstractmethod
+    def to_requests(self):
+        """Formats the data so that it is compatible with an outgoing HTTP request.
 
-        @returns A string.
+        @returns A dictionary containing keyword arguments.
+        @see requests.request.
         """
-        return json.dumps(self.decoded)
+        pass
 
-class JsonInputEntity(JsonEntity): #pylint: disable=abstract-method
+class JsonInputEntity(JsonEntity, RequestsInput): #pylint: disable=abstract-method,too-many-ancestors
     """An abstract Entity implementation for entities that can be sent to the Camunda REST api.
     """
     def __init__(self, **kwargs):
         super(JsonInputEntity, self).__init__(kwargs)
+
+    def to_requests(self):
+        return {'data': self}
+
+class FormOption(object):
+    """Models possible options for multipart form data options.
+    """
+    def __init__(self, content_type='text/plain', headers=None):
+        self.content_type = content_type
+        self.headers = headers or {}
+
+class MultipartFormInput(RequestsInput):
+    """A RequestsInput implementation for entities that must be sent as multipart forms to the Camunda REST api.
+    """
+    def __init__(self, files, **kwargs):
+        """@param files A dictionary mapping file names to their content.
+        @param kwargs Keyword arguments to be forwarded through options_by_name.
+        """
+        self.files = {name: (None, data, 'application/octet-stream', {}) for name, data in files.iteritems()}
+        for name, data in kwargs.iteritems():
+            name = name.replace('_', '-')
+            try:
+                options = self.options_by_name[name]
+            except KeyError:
+                raise ValueError('Unknown option {}'.format(name))
+            self.files[name] = (None, data, options.content_type, options.headers)
+
+    @abstractproperty
+    def options_by_name(self):
+        """Retrieves the options (content type and headers) for each name supported by the form input.
+
+        @returns A dictionary mapping form names to FormOption instances.
+        """
+        pass
+
+    def to_requests(self):
+        return {'files': self.files}
